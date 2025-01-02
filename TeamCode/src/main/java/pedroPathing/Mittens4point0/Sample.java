@@ -24,7 +24,19 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.localization.Pose;
+import com.pedropathing.pathgen.BezierCurve;
+import com.pedropathing.pathgen.BezierLine;
+import com.pedropathing.pathgen.Path;
+import com.pedropathing.pathgen.PathChain;
+import com.pedropathing.pathgen.Point;
+import com.pedropathing.util.Timer;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import  com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
+import pedroPathing.constants.FConstants;
+import pedroPathing.constants.LConstants;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 
@@ -32,6 +44,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 @Autonomous(name = "Samples", group = "Examples")
 public class Sample extends LinearOpMode {
     TeleOperatonal robot = new TeleOperatonal();
+    private Timer pathTimer, actionTimer, opmodeTimer;
 
     public class Lift {
         private final DcMotorEx lift;
@@ -334,23 +347,53 @@ public class Sample extends LinearOpMode {
 
 
     private Telemetry telemetryA;
+    Lift lift = new Lift(hardwareMap);
+    Actuator actuator = new Actuator(hardwareMap);
+    Intake crServoIntake = new Intake(hardwareMap);
+    ServoSlide servoSlide = new ServoSlide(hardwareMap);
+    ServoDumper servoDumper = new ServoDumper(hardwareMap);
+    IntakeServo servoIntake = new IntakeServo(hardwareMap);
+    public void intaking(){
+        Actions.runBlocking(new ParallelAction(
+                actuator.intakeOut(),
+                servoIntake.intakeDown(),
+                crServoIntake.intakeIn()));
 
 
-
-    @Override
-    public void runOpMode() {
-
-
-        follower = new Follower(hardwareMap);
-        Lift lift = new Lift(hardwareMap);
-        Actuator actuator = new Actuator(hardwareMap);
-        Intake crServoIntake = new Intake(hardwareMap);
-        ServoSlide servoSlide = new ServoSlide(hardwareMap);
-        ServoDumper servoDumper = new ServoDumper(hardwareMap);
-        IntakeServo servoIntake = new IntakeServo(hardwareMap);
+    }
+    public void transferring(){
+        Actions.runBlocking( new SequentialAction(
+            actuator.intakeIn(),
+            servoIntake.intakeUp(),
+            new SleepAction(1),
+            crServoIntake.intakeOut()));
 
 
-        follower.setStartingPose(startPose);
+    }
+    public void lifting(){
+        Actions.runBlocking(new SequentialAction(
+                lift.liftUp(),
+            new SleepAction(1),
+            servoSlide.servoSlideUp(),
+            servoDumper.servoDumpUp()));
+
+    }
+    public void dumping(){
+        Actions.runBlocking(new SequentialAction(
+                servoDumper.servoDumpDown(),
+                new SleepAction(1),
+                servoDumper.servoDumpUp(),
+                servoSlide.servoSlideDown()));
+
+    }
+
+    public void returning(){
+        Actions.runBlocking(lift.liftDown());
+        new SleepAction(0.5);
+    }
+
+    public void buildPath(){
+
         bucket1 = follower.pathBuilder()
                 .addPath(new BezierLine(new Point(startPose), new Point(bucket)))
                 .setLinearHeadingInterpolation(startPose.getHeading(), bucket.getHeading())
@@ -379,26 +422,90 @@ public class Sample extends LinearOpMode {
                 .addPath(new BezierLine(new Point(sample3), new Point(bucket)))
                 .setLinearHeadingInterpolation(sample3.getHeading(), bucket.getHeading())
                 .build();
+    }
+    public void setPathState(int pState) {
+        pathState = pState;
+        pathTimer.resetTimer();
+    }
+    public void autonomousPathUpdate(){
 
-/*        triangle = follower.pathBuilder()
-                .addPath(new BezierLine(new Point(startPose), new Point(bucket)))
-                .setLinearHeadingInterpolation(startPose.getHeading(), bucket.getHeading())
-                .addPath(new BezierCurve(new Point(bucket),new Point(sample1Curve) ,new Point(sample1)))
-                .setLinearHeadingInterpolation(bucket.getHeading(), sample1.getHeading())
-                .addPath(new BezierLine(new Point(sample1), new Point(bucket)))
-                .setLinearHeadingInterpolation(sample1.getHeading(), bucket.getHeading())
-                .addPath(new BezierCurve(new Point(bucket), new Point (sample2Curve), new Point(sample2)))
-                .setLinearHeadingInterpolation(bucket.getHeading(), sample2.getHeading())
-                .addPath(new BezierLine(new Point(sample2), new Point(bucket)))
-                .setLinearHeadingInterpolation(sample2.getHeading(), bucket.getHeading())
-                .addPath(new BezierLine(new Point(bucket), new Point(sample3)))
-                .setLinearHeadingInterpolation(bucket.getHeading(), sample3.getHeading())
-                .addPath(new BezierLine(new Point(sample3), new Point(bucket)))
-                .setLinearHeadingInterpolation(sample3.getHeading(), bucket.getHeading())
-                .build();*/
+        switch(pathState){
+
+            case 0:
+                lifting();
+                follower.followPath(bucket1);
+                if (follower.getPose().getX() > (bucket.getX()) && (follower.getPose().getY()) > (bucket.getY())) {
+                    dumping();
+                    returning();
+                    intaking();
+                    follower.followPath(bucket1, true);
+                    setPathState(1);
+                }
+            case 1:
+                if (follower.getPose().getX() > (sample1.getX() - 1) && (follower.getPose().getY()) > (sample1.getY() - 1)){
+                    Actions.runBlocking(new SleepAction(1));
+                    transferring();
+                    lifting();
+                    follower.followPath(sample11, true);
+                    setPathState(2);
+            }
+            case 2:
+                if (follower.getPose().getX() > (bucket.getX() - 1) && (follower.getPose().getY()) > (bucket.getY() - 1)){
+                    dumping();
+                    returning();
+                    intaking();
+                    follower.followPath(bucket2, true);
+                    setPathState(3);
+                }
+            case 3:
+                if (follower.getPose().getX() > (sample2.getX() - 1) && (follower.getPose().getY()) > (sample2.getY() - 1)){
+                    Actions.runBlocking(new SleepAction(1));
+                    transferring();
+                    lifting();
+                    follower.followPath(sample22, true);
+                    setPathState(4);
+                }
+            case 4:
+                if (follower.getPose().getX() > (bucket.getX() - 1) && (follower.getPose().getY()) > (bucket.getY() - 1)){
+                    dumping();
+                    returning();
+                    intaking();
+                    follower.followPath(bucket3, true);
+                    setPathState(5);
+                }
+            case 5:
+                if (follower.getPose().getX() > (sample3.getX() - 1) && (follower.getPose().getY()) > (sample3.getY() - 1)){
+                    Actions.runBlocking(new SleepAction(1));
+                    transferring();
+                    lifting();
+                    follower.followPath(sample33, true);
+                    setPathState(6);
+                }
+            case 6:
+                if (follower.getPose().getX() > (bucket.getX() - 1) && (follower.getPose().getY()) > (bucket.getY() - 1)){
+                    dumping();
+                    returning();
+                    intaking();
+                    follower.followPath(bucket4, true);
+                    setPathState(-1);
+                }
+        }
+    }
 
 
-     //   follower.followPath(triangle);
+
+
+    @Override
+    public void runOpMode() {
+
+
+        follower = new Follower(hardwareMap);
+
+
+        follower.setStartingPose(startPose);
+
+
+
 
 
         telemetryA = new MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().getTelemetry());
