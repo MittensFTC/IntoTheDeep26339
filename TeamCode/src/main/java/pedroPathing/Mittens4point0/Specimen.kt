@@ -26,15 +26,14 @@ import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.Servo
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import pedroPathing.constants.FConstants
-import pedroPathing.constants.LConstants;
+import pedroPathing.constants.LConstants
 
 @Autonomous(name = "Samples", group = "Examples")
-class Sample : LinearOpMode() {
+class Specimen : LinearOpMode() {
     var robot: TeleOperatonal = TeleOperatonal()
     private val pathTimer: Timer? = null
     private val actionTimer: Timer? = null
     private val opmodeTimer: Timer? = null
-
 
 
     inner class Lift(hardwareMap: HardwareMap) {
@@ -298,16 +297,34 @@ class Sample : LinearOpMode() {
 
     private var pathState: Int = 0
 
-    private val startPose = Pose(8.0, 80.0, Math.toRadians(0.0))
-    private val bucket = Pose(17.0, 128.0, Math.toRadians(-45.0))
-    private val sample1 = Pose(28.0, 120.0, Math.toRadians(0.0))
-    private val sample1Curve = Pose(19.0, 118.0)
-    private val sample2 = Pose(28.0, 132.0, Math.toRadians(0.0))
-    private val sample2Curve = Pose(19.0, 133.0)
-    private val sample3 = Pose(45.0, 127.0, Math.toRadians(90.0))
+    private val startPose = Pose(8.0, 56.0, Math.toRadians(0.0))
+    private val specimen1 = Pose(36.0,80.0, Math.toRadians(-90.0))
+    private val push1 = Pose(60.0, 15.0, Math.toRadians(0.0))
+    private val push1C1 = Pose(10.0,36.0)
+    private val push1C2 = Pose(40.0,35.0)
+    private val push2 = Pose(60.0,15.0,Math.toRadians(0.0))
+    private val push2C1 = Pose(89.0, 16.0)
+    private val push2C2 = Pose(-90.0, 30.0)
+    private val push2C3 = Pose(40.0,28.0)
+    private val push2C4 = Pose(95.0, 31.0)
+    private val push3 = Pose(66.0,9.0,Math.toRadians(0.0))
+    private val push3C1 = Pose(-30.0, 21.0)
+    private val push3C2 = Pose(36.0, 30.0)
+    private val push4 = Pose(20.0, 9.0, Math.toRadians(0.0))
+    private val getReadyForPickUp = Pose(26.0, 27.0, Math.toRadians(90.0))
+    private val pickUp = Pose(12.0,26.0,Math.toRadians(90.0))
+    private val specimen2 = Pose(36.0,76.0, Math.toRadians(-90.0))
+    private val specimen3 = Pose(36.0, 72.0, Math.toRadians(-90.0))
+    private val specimen4 = Pose(36.0, 68.0,Math.toRadians(-90.0))
+    private val specimen5 = Pose(36.0, 64.0, Math.toRadians(-90.0))
+    private val park = Pose(19.0, 31.0, Math.toRadians(90.0))
 
 
-    private val triangle: PathChain? = null
+
+
+
+
+
     private var bucket1: PathChain? = null
     private var bucket2: PathChain? = null
     private var bucket3: PathChain? = null
@@ -374,7 +391,7 @@ class Sample : LinearOpMode() {
     }
 
     fun buildPath() {
-        bucket1 = follower!!.pathBuilder()
+/*        bucket1 = follower!!.pathBuilder()
             .addPath(BezierLine(Point(startPose), Point(bucket)))
             .setLinearHeadingInterpolation(startPose.heading, bucket.heading)
             .build()
@@ -401,7 +418,7 @@ class Sample : LinearOpMode() {
         bucket4 = follower!!.pathBuilder()
             .addPath(BezierLine(Point(sample3), Point(bucket)))
             .setLinearHeadingInterpolation(sample3.heading, bucket.heading)
-            .build()
+            .build()*/
     }
 
     fun setPathState(pState: Int) {
@@ -412,86 +429,41 @@ class Sample : LinearOpMode() {
     fun autonomousPathUpdate() {
         when (pathState) {
             0 -> {
-                lifting()
-                follower!!.followPath(bucket1)
-                if (follower!!.pose.x > (bucket.x) && (follower!!.pose.y) > (bucket.y)) {
-                    dumping()
-                    returning()
-                    intaking()
-                    follower!!.followPath(bucket1, true)
-                    setPathState(1)
-                }
+
 
             }
 
             1 -> {
-                if (follower!!.pose.x > (sample1.x - 1) && (follower!!.pose.y) > (sample1.y - 1)) {
-                    runBlocking(SleepAction(1.0))
-                    transferring()
-                    lifting()
-                    follower!!.followPath(sample11, true)
-                    setPathState(2)
-                }
+
 
             }
 
             2 -> {
-                if (follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)) {
-                    dumping()
-                    returning()
-                    intaking()
-                    follower!!.followPath(bucket2, true)
-                    setPathState(3)
-                }
+
 
             }
 
             3 -> {
-                if (follower!!.pose.x > (sample2.x - 1) && (follower!!.pose.y) > (sample2.y - 1)) {
-                    runBlocking(SleepAction(1.0))
-                    transferring()
-                    lifting()
-                    follower!!.followPath(sample22, true)
-                    setPathState(4)
-                }
+
 
             }
 
             4 -> {
-                if (follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)) {
-                    dumping()
-                    returning()
-                    intaking()
-                    follower!!.followPath(bucket3, true)
-                    setPathState(5)
-                }
+
 
             }
 
             5 -> {
-                if (follower!!.pose.x > (sample3.x - 1) && (follower!!.pose.y) > (sample3.y - 1)) {
-                    runBlocking(SleepAction(1.0))
-                    transferring()
-                    lifting()
-                    follower!!.followPath(sample33, true)
-                    setPathState(6)
-                }
+
 
             }
 
-            6 -> if (follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)) {
-                dumping()
-                returning()
-                intaking()
-                follower!!.followPath(bucket4, true)
-                setPathState(-1)
-            }
+            6 -> {}
         }
     }
 
 
     override fun runOpMode() {
-        Constants.setConstants(FConstants::class.java, LConstants::class.java)
         follower = Follower(hardwareMap)
 
 
@@ -511,8 +483,6 @@ class Sample : LinearOpMode() {
 
         waitForStart()
         if (isStopRequested) return
-
-
         follower!!.update()
         autonomousPathUpdate()
 

@@ -31,7 +31,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 @Autonomous(name = "Samples", group = "Examples")
 public class SampleJava extends LinearOpMode {
-    TeleOperatonal robot = new TeleOperatonal();
+    TeleOperatonalJava robot = new TeleOperatonalJava();
     private Timer pathTimer, actionTimer, opmodeTimer;
 
 

@@ -19,14 +19,14 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
 
 
 
 @Autonomous(name = "specimen", group = "Examples")
 public class SpecimenAutonomous extends OpMode {
 
-    TeleOperatonal robot = new TeleOperatonal();
+    TeleOperatonalJava robot = new TeleOperatonalJava();
 
     public class Lift {
         private final DcMotorEx lift;
