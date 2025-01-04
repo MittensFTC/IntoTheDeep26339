@@ -295,7 +295,8 @@ class Specimen : LinearOpMode() {
 
     private var follower: Follower? = null
 
-    private var pathState: Int = 0
+    private var pathState = 0
+
 
     private val startPose = Pose(8.0, 56.0, Math.toRadians(0.0))
     private val specimen1 = Pose(36.0,80.0, Math.toRadians(-90.0))
@@ -320,18 +321,6 @@ class Specimen : LinearOpMode() {
     private val park = Pose(19.0, 31.0, Math.toRadians(90.0))
 
 
-
-
-
-
-
-    private var bucket1: PathChain? = null
-    private var bucket2: PathChain? = null
-    private var bucket3: PathChain? = null
-    private var bucket4: PathChain? = null
-    private var sample11: PathChain? = null
-    private var sample22: PathChain? = null
-    private var sample33: PathChain? = null
 
 
     private var telemetryA: Telemetry? = null
@@ -389,36 +378,85 @@ class Specimen : LinearOpMode() {
         runBlocking(lift.liftDown())
         SleepAction(0.5)
     }
+    private var chamber: PathChain? = null
+    private var sample1GetSet: PathChain? = null
+    private var sample2GetSet: PathChain? = null
+    private var sameple3GetSet: PathChain? = null
+    private var sample3In: PathChain? = null
+    private var specimenGetSet: PathChain? = null
+    private var specimen1PickUp: PathChain? = null
+    private var chamber1: PathChain? = null
+    private var specimen2PickUp: PathChain? = null
+    private var chamber2: PathChain? = null
+    private var specimen3PickUp: PathChain? = null
+    private var chamber3: PathChain? = null
+    private var specimen4PickUp: PathChain? = null
+    private var chamber4: PathChain? = null
+    private var parked: PathChain? = null
 
     fun buildPath() {
-/*        bucket1 = follower!!.pathBuilder()
-            .addPath(BezierLine(Point(startPose), Point(bucket)))
-            .setLinearHeadingInterpolation(startPose.heading, bucket.heading)
+        chamber = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(startPose), Point(specimen1)))
+            .setLinearHeadingInterpolation(startPose.heading, specimen1.heading)
             .build()
-        sample11 = follower!!.pathBuilder()
-            .addPath(BezierCurve(Point(bucket), Point(sample1Curve), Point(sample1)))
-            .setLinearHeadingInterpolation(bucket.heading, sample1.heading)
+        sample1GetSet = follower!!.pathBuilder()
+            .addPath(BezierCurve(Point(specimen1), Point(push1C1), Point(push1C2), Point(push1)))
+            .setLinearHeadingInterpolation(specimen1.heading, push1.heading)
             .build()
-        bucket2 = follower!!.pathBuilder()
-            .addPath(BezierLine(Point(sample1), Point(bucket)))
-            .setLinearHeadingInterpolation(sample1.heading, bucket.heading)
+        sample2GetSet = follower!!.pathBuilder()
+            .addPath(BezierCurve(Point(push1),Point(push2C1), Point(push2C2), Point(push2C3), Point(push2C4), Point(push2)))
+            .setLinearHeadingInterpolation(push1.heading, push2.heading)
             .build()
-        sample22 = follower!!.pathBuilder()
-            .addPath(BezierCurve(Point(bucket), Point(sample2Curve), Point(sample2)))
-            .setLinearHeadingInterpolation(bucket.heading, sample2.heading)
+        sameple3GetSet = follower!!.pathBuilder()
+            .addPath(BezierCurve(Point(push2), Point(push3C1), Point(push3C2), Point(push3)))
+            .setLinearHeadingInterpolation(push2.heading,push3.heading)
             .build()
-        bucket3 = follower!!.pathBuilder()
-            .addPath(BezierLine(Point(sample2), Point(bucket)))
-            .setLinearHeadingInterpolation(sample2.heading, bucket.heading)
+        sample3In = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(push3), Point(push4)))
+            .setLinearHeadingInterpolation(push3.heading,push4.heading)
             .build()
-        sample33 = follower!!.pathBuilder()
-            .addPath(BezierLine(Point(bucket), Point(sample3)))
-            .setLinearHeadingInterpolation(bucket.heading, sample3.heading)
+        specimenGetSet = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(push4), Point(getReadyForPickUp)))
+            .setLinearHeadingInterpolation(push4.heading, getReadyForPickUp.heading)
             .build()
-        bucket4 = follower!!.pathBuilder()
-            .addPath(BezierLine(Point(sample3), Point(bucket)))
-            .setLinearHeadingInterpolation(sample3.heading, bucket.heading)
-            .build()*/
+        specimen1PickUp = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(getReadyForPickUp), Point(pickUp)))
+            .setLinearHeadingInterpolation(getReadyForPickUp.heading, pickUp.heading)
+            .build()
+        chamber1 = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(pickUp), Point(specimen2)))
+            .setLinearHeadingInterpolation(pickUp.heading, specimen2.heading)
+            .build()
+        specimen2PickUp = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(specimen2), Point(pickUp)))
+            .setLinearHeadingInterpolation(specimen2.heading, pickUp.heading)
+            .build()
+        chamber2 = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(pickUp), Point(specimen3)))
+            .setLinearHeadingInterpolation(pickUp.heading, specimen3.heading)
+            .build()
+        specimen3PickUp = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(specimen3), Point(pickUp)))
+            .setLinearHeadingInterpolation(specimen3.heading, pickUp.heading)
+            .build()
+        chamber3 = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(pickUp), Point(specimen4)))
+            .setLinearHeadingInterpolation(pickUp.heading, specimen4.heading)
+            .build()
+        specimen4PickUp = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(specimen4), Point(pickUp)))
+            .setLinearHeadingInterpolation(specimen4.heading, pickUp.heading)
+            .build()
+        chamber4 = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(pickUp),Point(specimen5)))
+            .setLinearHeadingInterpolation(pickUp.heading, specimen5.heading)
+            .build()
+        parked = follower!!.pathBuilder()
+            .addPath(BezierLine(Point(specimen5), Point(park)))
+            .setLinearHeadingInterpolation(specimen5.heading, park.heading)
+            .build()
+
+
     }
 
     fun setPathState(pState: Int) {
