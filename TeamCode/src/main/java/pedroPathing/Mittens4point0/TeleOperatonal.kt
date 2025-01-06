@@ -20,6 +20,7 @@ class TeleOperatonal : LinearOpMode() {
 
     var liftingMotorMax: Int = 3000 //replace with empirical value for max encoder pos
     var specimenMotorMin: Int = 0
+    var specimenMotorPlace: Int = 1600//replace with empirical value for placing encoder pos
     var specimenMotorMax: Int = 2000 //replace with empirical value for max encoder pos
     var intakePower: Double = 1.0
 
@@ -83,6 +84,8 @@ class TeleOperatonal : LinearOpMode() {
         servoIntake.position = servoIntakeUpPos
         intake1.power = 0.0
         servoDumper.position = servoDumperDownPos
+        servospecimen1.position = specimenservo1OpenPos
+        servospecimen2.position = specimenservo2OpenPos
         var step = 0
 
 
@@ -197,9 +200,21 @@ class TeleOperatonal : LinearOpMode() {
         intake1.power = 1.0
     }
 
-    fun specimenPick() {}
+    fun specimenPick() {
+        motorSpecimen.targetPosition = specimenMotorMin
+        servospecimen1.position = specimenservo1ClosedPos
+        servospecimen2.position = specimenservo2ClosedPos
+    }
 
-    fun specimenPut() {}
+    fun specimenPut() {
+        motorSpecimen.targetPosition = specimenMotorPlace
+        servospecimen1.position = specimenservo1OpenPos
+        servospecimen2.position = specimenservo2OpenPos
+    }
+
+    fun specimenLift() {
+        motorSpecimen.targetPosition = specimenMotorMax
+    }
 
     fun hang() {}
 }

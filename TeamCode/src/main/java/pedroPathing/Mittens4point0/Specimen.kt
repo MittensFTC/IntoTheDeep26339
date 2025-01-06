@@ -28,7 +28,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry
 import pedroPathing.constants.FConstants
 import pedroPathing.constants.LConstants
 
-@Autonomous(name = "Samples", group = "Examples")
+@Autonomous(name = "Specimen", group = "Examples")
 class Specimen : LinearOpMode() {
     var robot: TeleOperatonal = TeleOperatonal()
     private val pathTimer: Timer? = null

@@ -175,18 +175,13 @@ class Sample : LinearOpMode() {
 
 
         inner class IntakeOut : Action {
-            var cycles: Int = 0
 
 
             override fun run(p: TelemetryPacket): Boolean {
                 p.put("INTAKE", "ON!!!!")
-                intake.power = 1.0
+                intake.power = -1.0
 
-
-                sleep(1000)
-                p.put("INTAKE", "Off")
-                cycles++
-                return cycles < 2
+                return true
             }
         }
 
@@ -196,17 +191,12 @@ class Sample : LinearOpMode() {
 
 
         inner class IntakeIn : Action {
-            var cycles: Int = 0
 
             override fun run(p: TelemetryPacket): Boolean {
                 p.put("INTAKE", "ON!!!!")
-                intake.power = -1.0
+                intake.power = 1.0
 
-
-                sleep(1000)
-                p.put("INTAKE", "Off")
-                cycles++
-                return cycles < 2
+                return true
             }
         }
 
@@ -299,15 +289,17 @@ class Sample : LinearOpMode() {
     private var pathState: Int = 0
 
     private val startPose = Pose(8.0, 80.0, Math.toRadians(0.0))
-    private val bucket = Pose(17.0, 128.0, Math.toRadians(-45.0))
-    private val sample1 = Pose(28.0, 120.0, Math.toRadians(0.0))
-    private val sample1Curve = Pose(19.0, 118.0)
-    private val sample2 = Pose(28.0, 132.0, Math.toRadians(0.0))
-    private val sample2Curve = Pose(19.0, 133.0)
+    private val bucket = Pose(22.0, 135.0, Math.toRadians(0.0))//line1
+    private val sample1 = Pose(28.0, 120.0, Math.toRadians(0.0))//line2
+    private val sample1Curve = Pose(19.0, 115.0)
+    private val sample2 = Pose(28.0, 132.0, Math.toRadians(0.0))//line3
+    private val sample2Curve = Pose(19.0, 129.0)
     private val sample3 = Pose(45.0, 127.0, Math.toRadians(90.0))
+    private val sample3Curve = Pose(16.0,  118.0, Math.toRadians(90.0))
+    private val bucketFinalCurve = Pose(17.0, 118.0)
 
 
-    private val triangle: PathChain? = null
+
     private var bucket1: PathChain? = null
     private var bucket2: PathChain? = null
     private var bucket3: PathChain? = null
@@ -331,7 +323,9 @@ class Sample : LinearOpMode() {
                 actuator.intakeOut(),
                 servoIntake.intakeDown(),
                 crServoIntake.intakeIn()
+
             )
+
         )
     }
 
@@ -340,8 +334,9 @@ class Sample : LinearOpMode() {
             SequentialAction(
                 actuator.intakeIn(),
                 servoIntake.intakeUp(),
-                SleepAction(1.0),
-                crServoIntake.intakeOut()
+                SleepAction(1.4),
+                crServoIntake.intakeOut(),
+                SleepAction(0.4)
             )
         )
     }
@@ -350,7 +345,7 @@ class Sample : LinearOpMode() {
         runBlocking(
             SequentialAction(
                 lift.liftUp(),
-                SleepAction(1.0),
+                SleepAction(1.2),
                 servoSlide.servoSlideUp(),
                 servoDumper.servoDumpUp()
             )
@@ -395,11 +390,11 @@ class Sample : LinearOpMode() {
             .setLinearHeadingInterpolation(sample2.heading, bucket.heading)
             .build()
         sample33 = follower!!.pathBuilder()
-            .addPath(BezierLine(Point(bucket), Point(sample3)))
+            .addPath(BezierCurve(Point(bucket),Point(sample3Curve), Point(sample3)))
             .setLinearHeadingInterpolation(bucket.heading, sample3.heading)
             .build()
         bucket4 = follower!!.pathBuilder()
-            .addPath(BezierLine(Point(sample3), Point(bucket)))
+            .addPath(BezierCurve(Point(sample3),Point(bucketFinalCurve), Point(bucket)))
             .setLinearHeadingInterpolation(sample3.heading, bucket.heading)
             .build()
     }
@@ -414,7 +409,7 @@ class Sample : LinearOpMode() {
             0 -> {
                 lifting()
                 follower!!.followPath(bucket1)
-                if (follower!!.pose.x > (bucket.x) && (follower!!.pose.y) > (bucket.y)) {
+                if (/*follower!!.pose.x > (bucket.x) && (follower!!.pose.y) > (bucket.y)*/ !follower!!.isBusy) {
                     dumping()
                     returning()
                     intaking()
@@ -423,10 +418,9 @@ class Sample : LinearOpMode() {
                 }
 
             }
-
             1 -> {
-                if (follower!!.pose.x > (sample1.x - 1) && (follower!!.pose.y) > (sample1.y - 1)) {
-                    runBlocking(SleepAction(1.0))
+                if (/*follower!!.pose.x > (sample1.x - 1) && (follower!!.pose.y) > (sample1.y - 1)*/!follower!!.isBusy) {
+                    runBlocking(SleepAction(0.5))
                     transferring()
                     lifting()
                     follower!!.followPath(sample11, true)
@@ -434,9 +428,10 @@ class Sample : LinearOpMode() {
                 }
 
             }
-
             2 -> {
-                if (follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)) {
+
+                if (/*follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)*/!follower!!.isBusy) {
+
                     dumping()
                     returning()
                     intaking()
@@ -445,20 +440,17 @@ class Sample : LinearOpMode() {
                 }
 
             }
-
             3 -> {
-                if (follower!!.pose.x > (sample2.x - 1) && (follower!!.pose.y) > (sample2.y - 1)) {
+                if (/*follower!!.pose.x > (sample2.x - 1) && (follower!!.pose.y) > (sample2.y - 1)*/!follower!!.isBusy) {
                     runBlocking(SleepAction(1.0))
                     transferring()
                     lifting()
                     follower!!.followPath(sample22, true)
                     setPathState(4)
                 }
-
             }
-
             4 -> {
-                if (follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)) {
+                if (/*follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)*/!follower!!.isBusy) {
                     dumping()
                     returning()
                     intaking()
@@ -467,9 +459,8 @@ class Sample : LinearOpMode() {
                 }
 
             }
-
             5 -> {
-                if (follower!!.pose.x > (sample3.x - 1) && (follower!!.pose.y) > (sample3.y - 1)) {
+                if (/*follower!!.pose.x > (sample3.x - 1) && (follower!!.pose.y) > (sample3.y - 1)*/!follower!!.isBusy) {
                     runBlocking(SleepAction(1.0))
                     transferring()
                     lifting()
@@ -478,8 +469,7 @@ class Sample : LinearOpMode() {
                 }
 
             }
-
-            6 -> if (follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)) {
+            6 -> if (/*follower!!.pose.x > (bucket.x - 1) && (follower!!.pose.y) > (bucket.y - 1)*/!follower!!.isBusy) {
                 dumping()
                 returning()
                 intaking()
