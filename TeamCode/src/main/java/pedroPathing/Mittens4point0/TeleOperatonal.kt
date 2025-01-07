@@ -1,15 +1,22 @@
 package pedroPathing.Mittens4point0
 
+import com.pedropathing.follower.Follower
+import com.pedropathing.localization.Pose
+import com.pedropathing.util.Constants
+import com.pedropathing.util.Timer
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.hardware.CRServo
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.Servo
+import pedroPathing.constants.FConstants
+import pedroPathing.constants.LConstants
 import kotlin.math.abs
 import kotlin.math.max
 
 
 class TeleOperatonal : LinearOpMode() {
+    private val opmodeTimer: Timer? = null
     var speed: Double = 0.75
 
     var intakeMotorMin: Int = 0
@@ -28,8 +35,7 @@ class TeleOperatonal : LinearOpMode() {
 
     var servoIntakeDownPos: Double = 0.0 //replace with empirical value for intake intaking pos
 
-    var servoSlideDownPos: Double =
-        0.0 //replace with empirical value for dumper starting pos on slide
+    var servoSlideDownPos: Double = 0.0 //replace with empirical value for dumper starting pos on slide
     var servoSlideUpPos: Double = 0.0 //replace with empirical value for dumper dumping pos on slide
     var specimenservo1OpenPos: Double = 0.0
     var specimenservo1ClosedPos: Double = 0.0
@@ -48,6 +54,9 @@ class TeleOperatonal : LinearOpMode() {
     lateinit var motorUp: DcMotor
     lateinit var motorSpecimen: DcMotor
     lateinit var servoDumper: Servo
+
+    private var follower: Follower? = null
+    private val startPose = Pose(0.0, 0.0, 0.0)
 
 
     @Throws(InterruptedException::class)
@@ -87,17 +96,43 @@ class TeleOperatonal : LinearOpMode() {
         servospecimen1.position = specimenservo1OpenPos
         servospecimen2.position = specimenservo2OpenPos
         var step = 0
+        Constants.setConstants(FConstants::class.java, LConstants::class.java)
+        follower = Follower(hardwareMap)
+        follower!!.setStartingPose(startPose)
 
 
 
+        while (!isStopRequested && !opModeIsActive()) {
+            follower!!.startTeleopDrive()
+        }
         if (isStopRequested) return
         while (opModeIsActive()) {
             waitForStart()
 
 
-            val y = -gamepad1.left_stick_y.toDouble() // Remember, Y stick value is reversed
+            /* Update Pedro to move the robot based on:
+        - Forward/Backward Movement: -gamepad1.left_stick_y
+        - Left/Right Movement: -gamepad1.left_stick_x
+        - Turn Left/Right Movement: -gamepad1.right_stick_x
+        - Robot-Centric Mode: true
+        */
+            follower!!.setTeleOpMovementVectors(-gamepad1.left_stick_y.toDouble()*speed, -gamepad1.left_stick_x.toDouble()*speed, -gamepad1.right_stick_x.toDouble()*speed, true)
+            follower!!.update()
+
+
+            /* Telemetry Outputs of our Follower */
+            telemetry.addData("X", follower!!.pose.x)
+            telemetry.addData("Y", follower!!.pose.y)
+            telemetry.addData("Heading in Degrees", Math.toDegrees(follower!!.pose.heading))
+
+
+            /* Update Telemetry to the Driver Hub */
+            telemetry.update()
+
+
+/*            val y = -gamepad1.left_stick_y.toDouble() // Remember, Y stick value is reversed
             val x = gamepad1.left_stick_x.toDouble() // Counteract imperfect strafing
-            val rx = gamepad1.right_stick_x.toDouble()
+            val rx = gamepad1.right_stick_x.toDouble()*/
             if (gamepad1.dpad_up) {
                 speed = 1.0
             }
@@ -110,7 +145,7 @@ class TeleOperatonal : LinearOpMode() {
             if (gamepad1.dpad_left) {
                 speed = 0.25
             }
-            val denominator = max(abs(y) + abs(x) + abs(rx), 1.0)
+ /*           val denominator = max(abs(y) + abs(x) + abs(rx), 1.0)
             val frontLeftPower = (y + x + rx) * speed / denominator
             val backLeftPower = (y - x + rx) * speed / denominator
             val frontRightPower = (y - x - rx) * speed / denominator
@@ -119,40 +154,76 @@ class TeleOperatonal : LinearOpMode() {
             motorBackLeft.power = backLeftPower
             motorFrontRight.power = frontRightPower
             motorBackRight.power = backRightPower
+
+*/
+
+            if (gamepad2.a){
+                step = 1
+            }
+            if (gamepad2.b){
+                step =2
+            }
+            if (gamepad2.x){
+                step = 3
+            }
+            if (gamepad2.y){
+                step = 4
+            }
+            if (gamepad2.right_bumper && step < 5){
+                step = 5
+            }
+
+
+
+
             when (step) {
                 0 -> {
-                    if (gamepad2.a){step = 1}
+                    break;
                 }
                 1 -> {
                     intaking()
-                    if (gamepad2.b) { step = 2 }
-                    else if (gamepad2.x) { step = 6 }
                 }
 
                 2 -> {
                     transferring()
-                    sleep(1000)
-                    step = 3
+                    opmodeTimer!!.resetTimer()
+                    if (opmodeTimer.elapsedTime >200) {
+                        lifting()
+                        if (motorUp.currentPosition == liftingMotorMax - 50)
+                            break
+                    }
                 }
                 3 -> {
-                    lifting()
-                    if (gamepad2.y){ step = 4}
+                    dumping()
+                    opmodeTimer!!.resetTimer()
+                    if (opmodeTimer.elapsedTime >200) {
+                        returning()
+                        if (motorUp.currentPosition == liftingMotorMin - 50)
+                            break
+                    }
+
                 }
                 4 -> {
-                    dumping()
-                    sleep(500)
-                    step = 5
+                    cancellation()
+                    opmodeTimer!!.resetTimer()
+                    if (opmodeTimer.elapsedTime >300) {
+                        break
+                    }
                 }
 
                 5 -> {
-                    returning()
-                    step = 0
+                    specimenPick()
+                    if (gamepad2.left_bumper){
+                        step = 6
+                    }
                 }
 
                 6 -> {
-                    cancellation()
-                    sleep(1000)
-                    step = 0
+                    specimenLift()
+                    if (gamepad2.right_bumper) step = 7
+                }
+                7 ->{
+                    specimenPut()
                 }
             }
         }
@@ -161,15 +232,17 @@ class TeleOperatonal : LinearOpMode() {
     fun intaking() {
         motorIntake.targetPosition = intakeMotorMax
         motorIntake.mode = DcMotor.RunMode.RUN_TO_POSITION
-        servoIntake.position = servoIntakeDownPos
-        intake1.power = intakePower
+        opmodeTimer!!.resetTimer()
+        if (opmodeTimer.elapsedTime >200) {
+            servoIntake.position = servoIntakeDownPos
+            intake1.power = intakePower
+        }
     }
 
     fun transferring() {
-        motorIntake.targetPosition = intakeMotorMin
-        motorIntake.mode = DcMotor.RunMode.RUN_TO_POSITION
         servoIntake.position = servoIntakeUpPos
-        if (motorIntake.targetPosition < intakeMotorMin + 50 && servoIntake.position == servoIntakeUpPos +- 0.1) {
+        motorIntake.targetPosition = intakeMotorMin
+        if (motorIntake.currentPosition < intakeMotorMin+100 && servoIntake.position == servoIntakeUpPos){
             intake1.power = -intakePower
         }
     }
@@ -177,16 +250,20 @@ class TeleOperatonal : LinearOpMode() {
     fun lifting() {
         motorUp.targetPosition = liftingMotorMax
         motorUp.mode = DcMotor.RunMode.RUN_TO_POSITION
-        sleep(500)
-        servoSlide.position = servoSlideUpPos
-        servoDumper.position = servoIntakeDownPos
+        opmodeTimer!!.resetTimer()
+        if (opmodeTimer.elapsedTime >1000) {
+            servoSlide.position = servoSlideUpPos
+            servoDumper.position = servoIntakeDownPos
+        }
     }
 
     fun dumping() {
         servoDumper.position = servoDumperDownPos
-        sleep(1000)
+        opmodeTimer!!.resetTimer()
+        if (opmodeTimer.elapsedTime >1000) {
         servoDumper.position = servoDumperUpPos
         servoSlide.position = servoIntakeDownPos
+            }
     }
 
     fun returning() {
@@ -196,14 +273,23 @@ class TeleOperatonal : LinearOpMode() {
 
     fun cancellation() {
         motorIntake.targetPosition = intakeMotorMax
-        sleep(500)
-        intake1.power = 1.0
+        opmodeTimer!!.resetTimer()
+        if (opmodeTimer.elapsedTime >500) {
+            intake1.power = -intakePower
+        }
     }
 
     fun specimenPick() {
+        servospecimen1.position = specimenservo1OpenPos
+        servospecimen2.position = specimenservo2OpenPos
         motorSpecimen.targetPosition = specimenMotorMin
-        servospecimen1.position = specimenservo1ClosedPos
-        servospecimen2.position = specimenservo2ClosedPos
+        if (motorSpecimen.currentPosition == specimenMotorMin +50) {
+            opmodeTimer!!.resetTimer()
+            if (opmodeTimer.elapsedTime >1000) {
+                servospecimen1.position = specimenservo1ClosedPos
+                servospecimen2.position = specimenservo2ClosedPos
+            }
+        }
     }
 
     fun specimenPut() {
@@ -214,6 +300,7 @@ class TeleOperatonal : LinearOpMode() {
 
     fun specimenLift() {
         motorSpecimen.targetPosition = specimenMotorMax
+
     }
 
     fun hang() {}
